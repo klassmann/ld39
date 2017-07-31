@@ -5,6 +5,15 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour {
 
+
+	public enum PlayerState
+	{
+		New,
+		Win,
+		Lose
+	}
+
+
 	public enum CharDirection {
 		Up,
 		Down,
@@ -13,7 +22,8 @@ public class PlayerController : MonoBehaviour {
 	}
 
 
-	private int _life = 4;
+	private PlayerState State = PlayerState.New;
+	private int _life = 5;
 	private bool _gotKey = false;
 
 
@@ -43,14 +53,16 @@ public class PlayerController : MonoBehaviour {
 		}
 	}
 
-	private CharDirection Direction = CharDirection.Right;
+	//private CharDirection Direction = CharDirection.Right;
 
 	private Vector3 moveRight;
 	private Vector3 moveLeft;
 	private Vector3 moveUp;
 	private Vector3 moveDown;
 
-	public GameObject[] Hearts;
+	public GameObject LevelController;
+
+	public GameObject[] UI_Hearts;
 	public GameObject UI_Key;
 
 	public Sprite HeartFull;
@@ -61,6 +73,11 @@ public class PlayerController : MonoBehaviour {
 	AudioSource audioWalk;
 	AudioClip clipWalking;
 	AudioClip clipDeath;
+
+	public int Pos_X = 4;
+	public int Pos_Y = 4;
+	public int Max_X = 8;
+	public int Max_Y = 10;
 
 
 	// Use this for initialization
@@ -74,7 +91,7 @@ public class PlayerController : MonoBehaviour {
 
 	public void RestoreHearts()
 	{
-		Life = 4;
+		Life = 5;
 	}
 
 	public void GetKey()
@@ -82,11 +99,27 @@ public class PlayerController : MonoBehaviour {
 		GotKey = true;
 	}
 
+	void Win()
+	{
+		Debug.Log("Win");
+		if (LevelController != null)
+			LevelController.SendMessage("PlayWin");
+		State = PlayerState.Win;
+	}
+
+	void Lose()
+	{
+		Debug.Log("Losing");
+		if (LevelController != null)
+			LevelController.SendMessage("PlayLose");
+		State = PlayerState.Lose;
+	}
+
 	private void UpdateHearts()
 	{
-		for(var i = 0; i < Hearts.Length; ++i)
+		for(var i = 0; i < UI_Hearts.Length; ++i)
 		{
-			var image = Hearts[i].GetComponent<Image>();
+			var image = UI_Hearts[i].GetComponent<Image>();
 			var currentLife = Life - 1;
 
 			if (currentLife >= i)
@@ -97,6 +130,12 @@ public class PlayerController : MonoBehaviour {
 			{
 				image.sprite = HeartEmpty;
 			}
+		}
+
+		if (Life < 0)
+		{
+			Lose();
+			return;
 		}
 	}
 
@@ -115,30 +154,59 @@ public class PlayerController : MonoBehaviour {
 
 	private void Move(CharDirection direction)
 	{
-		Life -= 1;
-		audioWalk.Play();
+
+		if (State != PlayerState.New)
+			return;
+
 		// if (Direction != direction)
 		Vector3 originalPos = transform.position;
 
+		if (direction == CharDirection.Up && Pos_Y == 2)
+			return;
+
+		if (direction == CharDirection.Down && Pos_Y == Max_Y - 1)
+			return;
+
+		if (direction == CharDirection.Left && Pos_X == 2)
+			return;
+
+		if (direction == CharDirection.Right && Pos_X == Max_X - 1)
+			return;
+
+
 		if (direction == CharDirection.Up)
+		{
 			transform.position += moveUp;
+			Pos_Y -= 1;
+		}
 
 		if (direction == CharDirection.Down)
+		{
 			transform.position += moveDown;
+			Pos_Y += 1;
+		}
 
 		if (direction == CharDirection.Left)
+		{
 			transform.position += moveLeft;
+			Pos_X -= 1;
+		}
 
 		if (direction == CharDirection.Right)
+		{
 			transform.position += moveRight;
-
-		Direction = direction;
+			Pos_X += 1;
+		}
+		
+		Life -= 1;
+		audioWalk.Play();
 
 		Vector3 moveDirection = gameObject.transform.position - originalPos;
 		float angle = Mathf.Atan2(moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
 		transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
 
 		UpdateHearts();
+
 	}
 	
 	// Update is called once per frame
@@ -159,6 +227,7 @@ public class PlayerController : MonoBehaviour {
 			Move(CharDirection.Down);
 		}
 	}
+		
 
 	void OnTriggerEnter2D(Collider2D coll) {
 		if (coll.gameObject.tag == "heart") {
@@ -170,6 +239,7 @@ public class PlayerController : MonoBehaviour {
 		} else if (coll.gameObject.tag == "door") {
 			if (GotKey) {
 				coll.gameObject.SendMessage("Open");
+				Win();
 			}
 		}
 	}

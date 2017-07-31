@@ -20,7 +20,6 @@ public class DoorController : MonoBehaviour {
 	public Sprite DoorOpened;
 	public Sprite DoorLocked;
 	SpriteRenderer Renderer;
-	AudioSource audio;
 
 	void updateDoorState()
 	{
@@ -33,12 +32,10 @@ public class DoorController : MonoBehaviour {
 
 	void Start() {
 		Renderer = GetComponent<SpriteRenderer>();
-		audio = GetComponent<AudioSource>();
 	}
 
 	void Open() {
 		IsOpened = true;
-		audio.Play();
 	}
 
 	void Close() {
